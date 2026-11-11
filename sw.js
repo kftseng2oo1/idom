@@ -1,6 +1,6 @@
 /* 每日座右銘 service worker
    改版時把 VERSION 加一，舊快取會在啟用時清掉。 */
-var VERSION = 'motto-v2';
+var VERSION = 'motto-v3';
 var SHELL = [
   './',
   'index.html',

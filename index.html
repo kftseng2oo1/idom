@@ -713,7 +713,7 @@ function drawCard(q){
     var step=size*1.16,colW=size*1.6,x0=left+(availW+n*colW)/2-colW/2,y0=top+(availH-maxLen*step)*0.25;
     g.fillStyle=INK;g.font='700 '+size+'px '+CARD_FONT;
     for(i=0;i<n;i++){for(j=0;j<cols[i].length;j++){vchar(g,cols[i].charAt(j),x0-i*colW,y0+(j+0.5)*step);}}
-    var sx=PL+78,sealY=PB-130,ss=Math.min(34,Math.floor(520/(src.length*1.18))),sstep=ss*1.18,sy=sealY-58-src.length*sstep;
+    var sx=PL+78,sealY=PB-140,ss=Math.min(34,Math.floor(520/(src.length*1.18))),sstep=ss*1.18,sy=sealY-84-src.length*sstep;
     g.fillStyle=MUTED;g.font='500 '+ss+'px '+CARD_FONT;
     for(j=0;j<src.length;j++){vchar(g,src.charAt(j),sx,sy+(j+0.5)*sstep);}
     drawSeal(g,sx,sealY,SEAL);
@@ -733,11 +733,14 @@ function drawCard(q){
   return c;
 }
 function drawSeal(g,cx,cy,color){
-  g.save();g.translate(cx,cy);g.rotate(-0.05);
-  g.fillStyle=color;g.fillRect(-40,-40,80,80);
-  g.strokeStyle='rgba(255,247,242,0.9)';g.lineWidth=2.5;g.strokeRect(-33,-33,66,66);
-  g.fillStyle='#fff7f2';g.font='700 48px '+CARD_FONT;g.textAlign='center';g.textBaseline='middle';
-  g.fillText('銘',0,2);g.restore();
+  /* 直式長方印，白文「崑福」由上而下 */
+  var w=70,ht=124;
+  g.save();g.translate(cx,cy);g.rotate(-0.04);
+  g.fillStyle=color;g.fillRect(-w/2,-ht/2,w,ht);
+  g.strokeStyle='rgba(255,247,242,0.9)';g.lineWidth=2.5;g.strokeRect(-w/2+6,-ht/2+6,w-12,ht-12);
+  g.fillStyle='#fff7f2';g.font='700 46px '+CARD_FONT;g.textAlign='center';g.textBaseline='middle';
+  g.fillText('崑',0,-ht/4+3);g.fillText('福',0,ht/4-3);
+  g.restore();
 }
 function openImage(){
   var q=currentQuote(),done=false;
@@ -761,7 +764,7 @@ function openImage(){
   }
   try{
     if(document.fonts&&document.fonts.load){
-      document.fonts.load('700 60px "Noto Serif TC"',q.text+(q.src||'')+'銘每日座右').then(go,go);
+      document.fonts.load('700 60px "Noto Serif TC"',q.text+(q.src||'')+'崑福每日座右銘').then(go,go);
       setTimeout(go,1500);
       return;
     }
