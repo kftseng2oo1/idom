@@ -77,6 +77,11 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 20px 24
 h2{font-family:var(--font-display);font-size:15px;font-weight:700;letter-spacing:.15em;margin:6px 0 0;padding-bottom:6px;border-bottom:1px solid var(--line)}
 .list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
 .list li{display:flex;gap:10px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)}
+.list .body[data-act="pick"]{cursor:pointer;border-radius:8px;margin:-6px 0 -6px -8px;padding:6px 8px;-webkit-tap-highlight-color:transparent}
+.list .body[data-act="pick"]:active{background:var(--line)}
+.list li.current .t{color:var(--seal)}
+.pickbar{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--ink);color:var(--paper);border-radius:10px;padding:8px 8px 8px 14px;font-size:14px}
+.pickbar .btn{border-color:var(--paper);color:var(--paper)}
 .list .body{flex:1;min-width:0}
 .list .t{font-family:var(--font-display);font-weight:500;font-size:16px;line-height:1.65;margin:0;overflow-wrap:anywhere}
 .list .s{color:var(--muted);font-size:12.5px;margin:3px 0 0}
@@ -134,6 +139,7 @@ nav button[aria-current="page"]{color:var(--ink);font-weight:700;border-top-colo
         <button class="btn" id="btnShare" type="button">分享</button>
         <button class="btn" id="btnImage" type="button">存成圖片</button>
         <button class="btn solid" id="btnRandom" type="button">隨手翻一句</button>
+        <button class="btn" id="btnPick" type="button">從語錄選一句</button>
       </div>
       <p class="note" id="poolNote"></p>
       <h2>近日座右銘</h2>
@@ -143,6 +149,10 @@ nav button[aria-current="page"]{color:var(--ink);font-weight:700;border-top-colo
     <section class="view" id="view-library" aria-label="語錄">
       <input class="search" id="q" type="text" placeholder="搜尋座右銘或出處" autocomplete="off">
       <div class="chips" id="chips"></div>
+      <div class="pickbar" id="pickBar" hidden>
+        <span>點一句，就會放到今日頁</span>
+        <button class="btn small" id="btnPickCancel" type="button">取消</button>
+      </div>
       <p class="note" id="countNote"></p>
       <ul class="list" id="libList"></ul>
     </section>
@@ -427,7 +437,7 @@ for(var i=0;i<RAW.length;i++){CLASSIC.push({id:'c'+i,text:RAW[i][0],src:RAW[i][1
 
 var KEY='motto.v1';
 var state={custom:[],fav:{},pool:'all',daily:null,history:[]};
-var ui={view:'today',random:null,cat:'全部',editing:null,confirm:null};
+var ui={view:'today',random:null,cat:'全部',editing:null,confirm:null,picking:false};
 
 function load(){
   try{
@@ -537,6 +547,10 @@ function renderToday(){
 function row(q,opt){
   opt=opt||{};
   var li=el('li'),body=el('div','body'),s=el('p','s');
+  body.setAttribute('data-act','pick');body.setAttribute('data-id',q.id);
+  body.setAttribute('role','button');body.setAttribute('tabindex','0');
+  body.setAttribute('aria-label','放到今日頁：'+q.text);
+  if(ui.random===q.id){li.className='current';}
   body.appendChild(el('p','t',q.text));
   if(opt.label){s.appendChild(el('b',null,opt.label+'　'));}
   s.appendChild(document.createTextNode((q.src||'自勉')+'．'+q.cat+(isMine(q)&&!opt.manage?'．我的':'')));
@@ -572,7 +586,8 @@ function renderLibrary(){
   for(i=a.length-1;i>=0;i--){ if(isMine(a[i])){ if(match(a[i],kw)){ul.appendChild(row(a[i]));n++;} } }
   for(i=0;i<a.length;i++){ q=a[i]; if(!isMine(q)&&match(q,kw)){ul.appendChild(row(q));n++;} }
   if(!n){ul.appendChild(el('li','empty','找不到符合的座右銘。換個關鍵字，或到「我的」自己寫一句。'));}
-  $('countNote').textContent='共 '+n+' 句';
+  $('countNote').textContent='共 '+n+' 句．點一句可放到今日頁顯示';
+  $('pickBar').hidden=!ui.picking;
 }
 function match(q,kw){
   if(ui.cat==='我的'){if(!isMine(q)){return false;}}
@@ -1084,7 +1099,11 @@ function onListClick(ev){
   while(b&&b!==this&&!(b.getAttribute&&b.getAttribute('data-act'))){b=b.parentNode;}
   if(!b||b===this){return;}
   var act=b.getAttribute('data-act'),id=b.getAttribute('data-id'),q=byId(id),i;
-  if(act==='fav'){toggleFav(id);}
+  if(act==='pick'&&q){
+    ui.random=id;ui.picking=false;
+    show('today');render();toast('已放到今日頁');
+  }
+  else if(act==='fav'){toggleFav(id);}
   else if(act==='edit'&&q){
     ui.editing=id;ui.confirm=null;
     $('fText').value=q.text;$('fSrc').value=q.src||'';$('fCat').value=q.cat;
@@ -1110,7 +1129,7 @@ function init(){
 
   document.querySelector('nav').addEventListener('click',function(ev){
     var v=ev.target.getAttribute&&ev.target.getAttribute('data-view');
-    if(v){show(v);}
+    if(v){if(ui.picking&&v!=='library'){ui.picking=false;renderLibrary();}show(v);}
   });
   $('btnFav').addEventListener('click',function(){toggleFav(currentQuote().id);});
   $('btnRandom').addEventListener('click',function(){
@@ -1147,6 +1166,16 @@ function init(){
     catch(e){toast('無法直接分享，請長按圖片儲存');}
   });
 
+  function onListKey(ev){
+    if((ev.key==='Enter'||ev.key===' ')&&ev.target.getAttribute&&ev.target.getAttribute('data-act')==='pick'){
+      ev.preventDefault();onListClick.call(this,ev);
+    }
+  }
+  $('recentList').addEventListener('keydown',onListKey);
+  $('libList').addEventListener('keydown',onListKey);
+  $('mineList').addEventListener('keydown',onListKey);
+  $('btnPick').addEventListener('click',function(){ui.picking=true;show('library');renderLibrary();});
+  $('btnPickCancel').addEventListener('click',function(){ui.picking=false;show('today');renderLibrary();});
   $('recentList').addEventListener('click',onListClick);
   $('libList').addEventListener('click',onListClick);
   $('mineList').addEventListener('click',onListClick);
