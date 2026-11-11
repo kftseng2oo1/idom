@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="座右銘">
+<meta name="theme-color" content="#eef1ec">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="description" content="每天一句座右銘：經典語錄、自己的座右銘、存成圖片分享。">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<title>每日座右銘</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* 版面構想：一幅掛軸。今日一句直書置中，朱印落款；語錄與自訂以素淨清單呈現。 */
+:root{
+  --paper:#eef1ec;      /* 青瓷紙色 */
+  --surface:#f9faf7;    /* 宣紙面 */
+  --ink:#1c2422;        /* 墨 */
+  --muted:#5d6b66;      /* 淡墨 */
+  --line:#cdd5ce;       /* 界線 */
+  --seal:#b3261e;       /* 朱印 */
+  --seal-ink:#fff7f2;
+  --font-display:"Noto Serif TC","Songti TC","PMingLiU","Noto Serif CJK TC",serif;
+  --font-body:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#111715;--surface:#1a221f;--ink:#e7ece7;--muted:#96a59e;--line:#2d3934;--seal:#e0564a;--seal-ink:#1a0f0d;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#111715;--surface:#1a221f;--ink:#e7ece7;--muted:#96a59e;--line:#2d3934;--seal:#e0564a;--seal-ink:#1a0f0d;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.6;-webkit-text-size-adjust:100%}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:2px solid var(--seal);outline-offset:2px}
+
+#app{height:100%;display:flex;flex-direction:column;max-width:560px;margin:0 auto}
+header{padding:calc(14px + env(safe-area-inset-top)) 20px 10px;display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+header h1{font-family:var(--font-display);font-size:20px;font-weight:700;margin:0;letter-spacing:.2em}
+header .date{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 20px 24px}
+.view{display:none;flex-direction:column;gap:18px}
+.view.on{display:flex}
+
+/* 掛軸 */
+.scroll{background:var(--surface);border-top:6px solid var(--ink);border-bottom:6px solid var(--ink);padding:30px 18px 26px;display:flex;flex-direction:row-reverse;justify-content:center;gap:18px;overflow-x:auto}
+.motto{-webkit-writing-mode:vertical-rl;writing-mode:vertical-rl;font-family:var(--font-display);font-weight:700;letter-spacing:.14em;line-height:1.85;height:300px;max-height:46vh;margin:0}
+.motto span{display:block}
+.motto.s1{font-size:34px}.motto.s2{font-size:28px}.motto.s3{font-size:23px}.motto.s4{font-size:20px}
+.meta{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:12px}
+.src{-webkit-writing-mode:vertical-rl;writing-mode:vertical-rl;color:var(--muted);font-family:var(--font-display);font-weight:500;font-size:14px;letter-spacing:.12em;margin:0}
+.seal{background:var(--seal);color:var(--seal-ink);font-family:var(--font-display);font-weight:700;font-size:13px;line-height:1.15;width:34px;padding:5px 0;text-align:center;border-radius:3px;transform:rotate(-3deg)}
+.scroll.h{flex-direction:column;align-items:stretch}
+.scroll.h .motto{-webkit-writing-mode:horizontal-tb;writing-mode:horizontal-tb;height:auto;max-height:none;letter-spacing:.02em;line-height:1.6}
+.scroll.h .meta{flex-direction:row;justify-content:space-between}
+.scroll.h .src{-webkit-writing-mode:horizontal-tb;writing-mode:horizontal-tb}
+
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn{border:1px solid var(--ink);background:transparent;border-radius:999px;padding:9px 16px;font-size:14px;min-height:42px}
+.btn.solid{background:var(--ink);color:var(--paper)}
+.btn.on{border-color:var(--seal);color:var(--seal)}
+.btn.small{padding:5px 12px;min-height:34px;font-size:13px}
+.btn.danger{border-color:var(--seal);color:var(--seal)}
+.note{color:var(--muted);font-size:13px;margin:0}
+
+h2{font-family:var(--font-display);font-size:15px;font-weight:700;letter-spacing:.15em;margin:6px 0 0;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.list li{display:flex;gap:10px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)}
+.list .body{flex:1;min-width:0}
+.list .t{font-family:var(--font-display);font-weight:500;font-size:16px;line-height:1.65;margin:0;overflow-wrap:anywhere}
+.list .s{color:var(--muted);font-size:12.5px;margin:3px 0 0}
+.list .s b{font-weight:400;color:var(--seal)}
+.star{border:0;background:transparent;font-size:22px;line-height:1;padding:6px;min-width:40px;min-height:40px;color:var(--muted)}
+.star.on{color:var(--seal)}
+.rowbtns{display:flex;gap:8px;margin-top:8px}
+.empty{color:var(--muted);font-size:14px;padding:18px 0}
+
+.search{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 14px;font-size:16px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.chip{flex:none;border:1px solid var(--line);background:transparent;border-radius:999px;padding:6px 13px;font-size:13.5px;color:var(--muted);min-height:36px}
+.chip.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+
+form{display:flex;flex-direction:column;gap:10px}
+label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+textarea,input[type=text],select{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;font-size:16px;width:100%}
+textarea{resize:vertical;min-height:84px;font-family:var(--font-display)}
+.two{display:flex;gap:10px}.two label{flex:1;min-width:0}
+.radios{display:flex;flex-direction:column;gap:6px}
+.radios label{flex-direction:row;align-items:center;gap:8px;font-size:15px;color:var(--ink)}
+
+nav{display:flex;border-top:1px solid var(--line);background:var(--surface);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;background:transparent;padding:13px 0 11px;font-family:var(--font-display);font-size:15px;letter-spacing:.2em;color:var(--muted);border-top:3px solid transparent;margin-top:-1px}
+nav button[aria-current="page"]{color:var(--ink);font-weight:700;border-top-color:var(--seal)}
+
+#imgView{display:none;position:fixed;top:0;right:0;bottom:0;left:0;background:var(--paper);flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:calc(16px + env(safe-area-inset-top)) 20px calc(16px + env(safe-area-inset-bottom));z-index:5}
+#imgView.on{display:flex}
+#imgView img{max-width:100%;max-height:68%;border:1px solid var(--line);-webkit-touch-callout:default}
+#imgView .actions{justify-content:center}
+#toast{z-index:9;position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:9px 18px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:86%;text-align:center}
+#toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>座右銘</h1>
+    <span class="date" id="dateLabel"></span>
+  </header>
+
+  <main>
+    <section class="view on" id="view-today" aria-label="今日一句">
+      <div class="scroll" id="scroll">
+        <p class="motto" id="mottoText"></p>
+        <div class="meta">
+          <p class="src" id="mottoSrc"></p>
+          <div class="seal" id="seal">今<br>日</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btnFav" type="button">收藏</button>
+        <button class="btn" id="btnShare" type="button">分享</button>
+        <button class="btn" id="btnImage" type="button">存成圖片</button>
+        <button class="btn solid" id="btnRandom" type="button">隨手翻一句</button>
+      </div>
+      <p class="note" id="poolNote"></p>
+      <h2>近日座右銘</h2>
+      <ul class="list" id="recentList"></ul>
+    </section>
+
+    <section class="view" id="view-library" aria-label="語錄">
+      <input class="search" id="q" type="text" placeholder="搜尋座右銘或出處" autocomplete="off">
+      <div class="chips" id="chips"></div>
+      <p class="note" id="countNote"></p>
+      <ul class="list" id="libList"></ul>
+    </section>
+
+    <section class="view" id="view-mine" aria-label="我的">
+      <h2 id="formTitle">寫下自己的座右銘</h2>
+      <form id="addForm">
+        <label for="fText">座右銘
+          <textarea id="fText" maxlength="120" placeholder="例如：今天比昨天好一點就夠了。"></textarea>
+        </label>
+        <div class="two">
+          <label for="fSrc">出處或署名（可不填）
+            <input id="fSrc" type="text" maxlength="30" placeholder="自勉">
+          </label>
+          <label for="fCat">分類
+            <select id="fCat"></select>
+          </label>
+        </div>
+        <div class="actions">
+          <button class="btn solid" id="btnSave" type="submit">加入語錄</button>
+          <button class="btn" id="btnCancel" type="button" hidden>取消修改</button>
+        </div>
+      </form>
+
+      <h2>我的座右銘</h2>
+      <ul class="list" id="mineList"></ul>
+
+      <h2>每日一句從哪裡選</h2>
+      <div class="radios" id="poolRadios">
+        <label for="pool-all"><input type="radio" name="pool" id="pool-all" value="all">全部語錄</label>
+        <label for="pool-mine"><input type="radio" name="pool" id="pool-mine" value="mine">只從我的座右銘</label>
+        <label for="pool-fav"><input type="radio" name="pool" id="pool-fav" value="fav">只從收藏</label>
+      </div>
+
+      <h2>備份與還原</h2>
+      <p class="note">資料存在這台裝置的瀏覽器裡。換手機前，先複製備份文字，再到新裝置貼上還原。</p>
+      <label for="backup">備份文字
+        <textarea id="backup" placeholder="把備份文字貼在這裡，再按「還原」"></textarea>
+      </label>
+      <div class="actions">
+        <button class="btn" id="btnExport" type="button">產生並複製備份</button>
+        <button class="btn" id="btnImport" type="button">還原</button>
+      </div>
+    </section>
+  </main>
+
+  <nav aria-label="主選單">
+    <button type="button" data-view="today" aria-current="page">今日</button>
+    <button type="button" data-view="library">語錄</button>
+    <button type="button" data-view="mine">我的</button>
+  </nav>
+</div>
+<div id="imgView" role="dialog" aria-label="座右銘圖片">
+  <img id="imgOut" alt="今日座右銘圖片">
+  <p class="note">長按圖片，就能儲存或傳到 LINE。</p>
+  <div class="actions">
+    <button class="btn solid" id="btnImgShare" type="button" hidden>分享圖片</button>
+    <button class="btn" id="btnImgClose" type="button">關閉</button>
+  </div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+/* 經典語錄：只能往後新增，不要調換順序（id 依順序產生）。 */
+var RAW=[
+['天行健，君子以自強不息。','《周易》','立志'],
+['地勢坤，君子以厚德載物。','《周易》','修身'],
+['千里之行，始於足下。','《老子》','立志'],
+['知人者智，自知者明。','《老子》','智慧'],
+['勝人者有力，自勝者強。','《老子》','修身'],
+['上善若水。','《老子》','處世'],
+['天下難事，必作於易；天下大事，必作於細。','《老子》','智慧'],
+['合抱之木，生於毫末；九層之臺，起於累土。','《老子》','堅毅'],
+['禍兮福之所倚，福兮禍之所伏。','《老子》','智慧'],
+['大器晚成。','《老子》','堅毅'],
+['學而不思則罔，思而不學則殆。','《論語》','勤學'],
+['三人行，必有我師焉。','《論語》','勤學'],
+['己所不欲，勿施於人。','《論語》','處世'],
+['知之為知之，不知為不知，是知也。','《論語》','勤學'],
+['歲寒，然後知松柏之後凋也。','《論語》','堅毅'],
+['過而不改，是謂過矣。','《論語》','修身'],
+['工欲善其事，必先利其器。','《論語》','智慧'],
+['人無遠慮，必有近憂。','《論語》','智慧'],
+['三軍可奪帥也，匹夫不可奪志也。','《論語》','立志'],
+['見賢思齊焉，見不賢而內自省也。','《論語》','修身'],
+['吾日三省吾身。','曾子．《論語》','修身'],
+['君子欲訥於言而敏於行。','《論語》','修身'],
+['欲速則不達。','《論語》','智慧'],
+['溫故而知新。','《論語》','勤學'],
+['敏而好學，不恥下問。','《論語》','勤學'],
+['君子坦蕩蕩，小人長戚戚。','《論語》','處世'],
+['不患人之不己知，患不知人也。','《論語》','處世'],
+['生於憂患，死於安樂。','《孟子》','堅毅'],
+['窮則獨善其身，達則兼善天下。','《孟子》','處世'],
+['富貴不能淫，貧賤不能移，威武不能屈。','《孟子》','立志'],
+['不積跬步，無以至千里；不積小流，無以成江海。','《荀子》','堅毅'],
+['鍥而不舍，金石可鏤。','《荀子》','堅毅'],
+['志不強者智不達。','《墨子》','立志'],
+['博學之，審問之，慎思之，明辨之，篤行之。','《中庸》','勤學'],
+['苟日新，日日新，又日新。','《大學》','修身'],
+['滿招損，謙受益。','《尚書》','修身'],
+['行百里者半九十。','《戰國策》','堅毅'],
+['路漫漫其修遠兮，吾將上下而求索。','屈原《離騷》','立志'],
+['燕雀安知鴻鵠之志。','《史記》','立志'],
+['桃李不言，下自成蹊。','《史記》','處世'],
+['有志者事竟成。','《後漢書》','立志'],
+['失之東隅，收之桑榆。','《後漢書》','智慧'],
+['少壯不努力，老大徒傷悲。','漢樂府《長歌行》','惜時'],
+['非淡泊無以明志，非寧靜無以致遠。','諸葛亮《誡子書》','修身'],
+['靜以修身，儉以養德。','諸葛亮《誡子書》','修身'],
+['勿以惡小而為之，勿以善小而不為。','劉備','修身'],
+['老驥伏櫪，志在千里；烈士暮年，壯心不已。','曹操《龜雖壽》','立志'],
+['盛年不重來，一日難再晨。及時當勉勵，歲月不待人。','陶淵明《雜詩》','惜時'],
+['長風破浪會有時，直掛雲帆濟滄海。','李白《行路難》','立志'],
+['天生我材必有用。','李白《將進酒》','立志'],
+['會當凌絕頂，一覽眾山小。','杜甫《望嶽》','立志'],
+['讀書破萬卷，下筆如有神。','杜甫','勤學'],
+['欲窮千里目，更上一層樓。','王之渙《登鸛雀樓》','立志'],
+['黑髮不知勤學早，白首方悔讀書遲。','顏真卿《勸學》','惜時'],
+['業精於勤，荒於嬉；行成於思，毀於隨。','韓愈《進學解》','勤學'],
+['千淘萬漉雖辛苦，吹盡狂沙始到金。','劉禹錫《浪淘沙》','堅毅'],
+['先天下之憂而憂，後天下之樂而樂。','范仲淹《岳陽樓記》','處世'],
+['不以物喜，不以己悲。','范仲淹《岳陽樓記》','修身'],
+['不畏浮雲遮望眼，自緣身在最高層。','王安石《登飛來峰》','智慧'],
+['古之立大事者，不惟有超世之才，亦必有堅忍不拔之志。','蘇軾《晁錯論》','堅毅'],
+['博觀而約取，厚積而薄發。','蘇軾','勤學'],
+['竹杖芒鞋輕勝馬，誰怕？一蓑煙雨任平生。','蘇軾《定風波》','處世'],
+['紙上得來終覺淺，絕知此事要躬行。','陸游','勤學'],
+['山重水複疑無路，柳暗花明又一村。','陸游《遊山西村》','堅毅'],
+['問渠那得清如許，為有源頭活水來。','朱熹《觀書有感》','勤學'],
+['人生自古誰無死，留取丹心照汗青。','文天祥《過零丁洋》','立志'],
+['繩鋸木斷，水滴石穿。','羅大經《鶴林玉露》','堅毅'],
+['知行合一。','王陽明','修身'],
+['明日復明日，明日何其多。我生待明日，萬事成蹉跎。','錢福《明日歌》','惜時'],
+['千磨萬擊還堅勁，任爾東西南北風。','鄭板橋《竹石》','堅毅'],
+['天下事有難易乎？為之，則難者亦易矣。','彭端淑《為學》','立志'],
+['海納百川，有容乃大；壁立千仞，無欲則剛。','林則徐','處世'],
+['一寸光陰一寸金，寸金難買寸光陰。','《增廣賢文》','惜時'],
+['書山有路勤為徑，學海無涯苦作舟。','古訓','勤學'],
+['寶劍鋒從磨礪出，梅花香自苦寒來。','《警世賢文》','堅毅'],
+['認識你自己。','德爾斐神殿箴言','智慧'],
+['未經審視的人生不值得活。','蘇格拉底','智慧'],
+['人不能兩次踏進同一條河流。','赫拉克利特','智慧'],
+['活到老，學到老。','梭倫','勤學'],
+['習慣是第二天性。','西塞羅','修身'],
+['把握今日。','賀拉斯','惜時'],
+['命運眷顧勇者。','維吉爾','立志'],
+['知識就是力量。','培根','勤學'],
+['我思故我在。','笛卡兒','智慧'],
+['人是一根會思考的蘆葦。','帕斯卡','智慧'],
+['忍耐是苦的，果實卻是甜的。','盧梭','堅毅'],
+['時間就是金錢。','富蘭克林','惜時'],
+['今天能做的事，不要留到明天。','富蘭克林','惜時'],
+['冬天來了，春天還會遠嗎？','雪萊《西風頌》','堅毅'],
+['凡殺不死我的，使我更強大。','尼采','堅毅'],
+['天才是百分之一的靈感，加上百分之九十九的汗水。','愛迪生','勤學'],
+['羅馬不是一天造成的。','西方諺語','堅毅'],
+/* 以下取自 chinese-poetry 資料庫並比對原文 */
+['學而時習之，不亦說乎？','《論語》','勤學'],
+['知者不惑，仁者不憂，勇者不懼。','《論語》','修身'],
+['逝者如斯夫，不舍晝夜。','《論語》','惜時'],
+['德不孤，必有鄰。','《論語》','處世'],
+['君子和而不同，小人同而不和。','《論語》','處世'],
+['君子成人之美，不成人之惡。','《論語》','處世'],
+['其身正，不令而行。','《論語》','修身'],
+['小不忍則亂大謀。','《論語》','智慧'],
+['道不同，不相為謀。','《論語》','處世'],
+['當仁不讓於師。','《論語》','立志'],
+['朝聞道，夕死可矣。','《論語》','立志'],
+['人而無信，不知其可也。','《論語》','修身'],
+['知之者不如好之者，好之者不如樂之者。','《論語》','勤學'],
+['躬自厚而薄責於人。','《論語》','處世'],
+['往者不可諫，來者猶可追。','《論語》','惜時'],
+['後生可畏，焉知來者之不如今也？','《論語》','立志'],
+['言必信，行必果。','《論語》','修身'],
+['發憤忘食，樂以忘憂。','《論語》','勤學'],
+['學而不厭，誨人不倦。','《論語》','勤學'],
+['君子求諸己，小人求諸人。','《論語》','修身'],
+['過猶不及。','《論語》','智慧'],
+['見義不為，無勇也。','《論語》','立志'],
+['天將降大任於是人也，必先苦其心志，勞其筋骨。','《孟子》','堅毅'],
+['得道者多助，失道者寡助。','《孟子》','處世'],
+['老吾老，以及人之老；幼吾幼，以及人之幼。','《孟子》','處世'],
+['盡信書，則不如無書。','《孟子》','勤學'],
+['不以規矩，不能成方圓。','《孟子》','智慧'],
+['愛人者，人恆愛之；敬人者，人恆敬之。','《孟子》','處世'],
+['雖千萬人，吾往矣。','《孟子》','立志'],
+['人有不為也，而後可以有為。','《孟子》','智慧'],
+['養心莫善於寡欲。','《孟子》','修身'],
+['仰不愧於天，俯不怍於人。','《孟子》','修身'],
+['天時不如地利，地利不如人和。','《孟子》','處世'],
+['權，然後知輕重；度，然後知長短。','《孟子》','智慧'],
+['知止而後有定，定而後能靜。','《大學》','修身'],
+['富潤屋，德潤身。','《大學》','修身'],
+['心不在焉，視而不見，聽而不聞。','《大學》','勤學'],
+['凡事豫則立，不豫則廢。','《中庸》','智慧'],
+['人一能之，己百之；人十能之，己千之。','《中庸》','堅毅'],
+['好學近乎知，力行近乎仁，知恥近乎勇。','《中庸》','修身'],
+['行遠必自邇，登高必自卑。','《中庸》','堅毅'],
+['路遙知馬力，日久見人心。','《增廣賢文》','處世'],
+['近水知魚性，近山識鳥音。','《增廣賢文》','智慧'],
+['讀書須用意，一字值千金。','《增廣賢文》','勤學'],
+['有意栽花花不發，無心插柳柳成蔭。','《增廣賢文》','智慧'],
+['寧可人負我，切莫我負人。','《增廣賢文》','處世'],
+['長江後浪推前浪，世上新人趕舊人。','《增廣賢文》','立志'],
+['莫道君行早，更有早行人。','《增廣賢文》','勤學'],
+['欲求生富貴，須下死工夫。','《增廣賢文》','堅毅'],
+['知己知彼，將心比心。','《增廣賢文》','處世'],
+['一年之計在於春，一日之計在於寅。','《增廣賢文》','惜時'],
+['一粥一飯，當思來處不易；半絲半縷，恆念物力維艱。','《朱子家訓》','修身'],
+['宜未雨而綢繆，毋臨渴而掘井。','《朱子家訓》','智慧'],
+['施惠無念，受恩莫忘。','《朱子家訓》','處世'],
+['凡事當留餘地，得意不宜再往。','《朱子家訓》','處世'],
+['善欲人見，不是真善；惡恐人知，便是大惡。','《朱子家訓》','修身'],
+['勿自暴，勿自棄；聖與賢，可馴致。','《弟子規》','立志'],
+['過能改，歸於無。','《弟子規》','修身'],
+['凡出言，信為先。','《弟子規》','修身'],
+['寬為限，緊用功；工夫到，滯塞通。','《弟子規》','勤學'],
+['玉不琢，不成器。','《三字經》','勤學'],
+['勤有功，戲無益。','《三字經》','勤學'],
+['尺璧非寶，寸陰是競。','《千字文》','惜時'],
+['律己宜帶秋氣，處世宜帶春氣。','張潮《幽夢影》','處世'],
+['能閒世人之所忙者，方能忙世人之所閒。','張潮《幽夢影》','智慧'],
+['人須求可入詩，物須求可入畫。','張潮《幽夢影》','修身'],
+['傲骨不可無，傲心不可有。','張潮《幽夢影》','修身'],
+['山不在高，有仙則名；水不在深，有龍則靈。','劉禹錫《陋室銘》','修身'],
+['聞道有先後，術業有專攻。','韓愈《師說》','勤學'],
+['窮且益堅，不墜青雲之志。','王勃《滕王閣序》','立志'],
+['老當益壯，寧移白首之心？','王勃《滕王閣序》','立志'],
+['不戚戚於貧賤，不汲汲於富貴。','陶淵明《五柳先生傳》','修身'],
+['人固有一死，或重於泰山，或輕於鴻毛。','司馬遷《報任安書》','立志'],
+['居安思危，戒奢以儉。','魏徵《諫太宗十思疏》','智慧']
+];
+var CATS=['立志','勤學','修身','處世','惜時','堅毅','智慧'];
+var CLASSIC=[];
+for(var i=0;i<RAW.length;i++){CLASSIC.push({id:'c'+i,text:RAW[i][0],src:RAW[i][1],cat:RAW[i][2]});}
+
+var KEY='motto.v1';
+var state={custom:[],fav:{},pool:'all',daily:null,history:[]};
+var ui={view:'today',random:null,cat:'全部',editing:null,confirm:null};
+
+function load(){
+  try{
+    var s=localStorage.getItem(KEY);
+    if(s){var o=JSON.parse(s);for(var k in state){if(o && o.hasOwnProperty(k)){state[k]=o[k];}}}
+  }catch(e){}
+  if(!(state.custom instanceof Array)){state.custom=[];}
+  if(!(state.history instanceof Array)){state.history=[];}
+  if(!state.fav||typeof state.fav!=='object'){state.fav={};}
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+
+function $(id){return document.getElementById(id);}
+function el(tag,cls,text){var e=document.createElement(tag);if(cls){e.className=cls;}if(text!=null){e.textContent=text;}return e;}
+function all(){return CLASSIC.concat(state.custom);}
+function byId(id){var a=all();for(var i=0;i<a.length;i++){if(a[i].id===id){return a[i];}}return null;}
+function isMine(q){return q.id.charAt(0)==='u';}
+
+/* ---------- 每日一句 ---------- */
+function pad(n){return n<10?'0'+n:''+n;}
+function dateStr(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function dayNum(d){return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/86400000);}
+function poolList(){
+  var list;
+  if(state.pool==='mine'){list=state.custom;}
+  else if(state.pool==='fav'){list=all().filter(function(q){return !!state.fav[q.id];});}
+  else{list=all();}
+  return list.length?list:all();
+}
+function poolFellBack(){
+  if(state.pool==='mine'){return state.custom.length===0;}
+  if(state.pool==='fav'){return all().filter(function(q){return !!state.fav[q.id];}).length===0;}
+  return false;
+}
+/* 以「輪次」為種子洗牌：一輪內每句各出現一次，輪完才重洗。 */
+function shuffled(n,seed){
+  var a=[],i,j,t,s=(seed*7919+12345)%2147483646+1;
+  for(i=0;i<n;i++){a.push(i);}
+  for(i=n-1;i>0;i--){
+    s=(s*16807)%2147483647;
+    j=s%(i+1);t=a[i];a[i]=a[j];a[j]=t;
+  }
+  return a;
+}
+function computeDaily(list,day,avoidId){
+  var n=list.length,order=shuffled(n,Math.floor(day/n)),idx=day%n,q=list[order[idx]];
+  if(n>1&&avoidId&&q.id===avoidId){q=list[order[(idx+1)%n]];}
+  return q;
+}
+function pickDaily(){
+  var now=new Date(),t=dateStr(now),list=poolList(),q,k;
+  if(state.daily&&state.daily.date===t){
+    q=byId(state.daily.id);
+    if(q){for(k=0;k<list.length;k++){if(list[k].id===q.id){return q;}}}
+  }
+  if(state.daily&&state.daily.date!==t){
+    state.history.unshift(state.daily);
+    state.history=state.history.slice(0,14);
+  }
+  q=computeDaily(list,dayNum(now),state.history[0]?state.history[0].id:null);
+  state.daily={date:t,id:q.id};
+  save();
+  return q;
+}
+
+/* ---------- 畫面 ---------- */
+function clauses(text){
+  var out=[],cur='',i,c;
+  for(i=0;i<text.length;i++){
+    c=text.charAt(i);cur+=c;
+    if('，；。？！：、'.indexOf(c)>=0&&c!=='、'){out.push(cur);cur='';}
+  }
+  if(cur){out.push(cur);}
+  return out;
+}
+function currentQuote(){return (ui.random&&byId(ui.random))||pickDaily();}
+function renderToday(){
+  var now=new Date(),wk='日一二三四五六'.charAt(now.getDay());
+  $('dateLabel').textContent=now.getFullYear()+' 年 '+(now.getMonth()+1)+' 月 '+now.getDate()+' 日　星期'+wk;
+  var q=currentQuote(),m=$('mottoText'),parts,i,n=q.text.length;
+  var horizontal=/[A-Za-z]{3,}/.test(q.text)||n>48;
+  $('scroll').className='scroll'+(horizontal?' h':'');
+  m.className='motto '+(n<=10?'s1':n<=18?'s2':n<=30?'s3':'s4');
+  m.textContent='';
+  if(horizontal){m.textContent=q.text;}
+  else{parts=clauses(q.text);for(i=0;i<parts.length;i++){m.appendChild(el('span',null,parts[i]));}}
+  $('mottoSrc').textContent=q.src||'自勉';
+  $('seal').innerHTML=ui.random?'隨<br>手':'今<br>日';
+  var fav=!!state.fav[q.id];
+  $('btnFav').textContent=fav?'已收藏':'收藏';
+  $('btnFav').className='btn'+(fav?' on':'');
+  $('btnFav').setAttribute('aria-pressed',fav?'true':'false');
+  $('btnRandom').textContent=ui.random?'回到今日一句':'隨手翻一句';
+  var note='語錄共 '+all().length+' 句，其中 '+state.custom.length+' 句是你寫的。';
+  if(poolFellBack()){note+=(state.pool==='mine'?'你還沒有自己的座右銘':'你還沒有收藏')+'，今日一句先從全部語錄選。';}
+  $('poolNote').textContent=note;
+
+  var ul=$('recentList');ul.textContent='';
+  var shown=0;
+  for(i=0;i<state.history.length&&shown<7;i++){
+    var h=state.history[i],hq=byId(h.id);
+    if(!hq){continue;}
+    ul.appendChild(row(hq,{label:h.date.slice(5).replace('-','/')}));
+    shown++;
+  }
+  if(!shown){ul.appendChild(el('li','empty','明天起，這裡會留下你每天看過的句子。'));}
+}
+function row(q,opt){
+  opt=opt||{};
+  var li=el('li'),body=el('div','body'),s=el('p','s');
+  body.appendChild(el('p','t',q.text));
+  if(opt.label){s.appendChild(el('b',null,opt.label+'　'));}
+  s.appendChild(document.createTextNode((q.src||'自勉')+'．'+q.cat+(isMine(q)&&!opt.manage?'．我的':'')));
+  body.appendChild(s);
+  if(opt.manage){
+    var rb=el('div','rowbtns'),e=el('button','btn small','修改'),d;
+    e.type='button';e.setAttribute('data-act','edit');e.setAttribute('data-id',q.id);
+    if(ui.confirm===q.id){d=el('button','btn small danger','確定刪除');d.setAttribute('data-act','del2');}
+    else{d=el('button','btn small','刪除');d.setAttribute('data-act','del');}
+    d.type='button';d.setAttribute('data-id',q.id);
+    rb.appendChild(e);rb.appendChild(d);body.appendChild(rb);
+  }
+  li.appendChild(body);
+  var on=!!state.fav[q.id],st=el('button','star'+(on?' on':''),on?'★':'☆');
+  st.type='button';st.setAttribute('data-act','fav');st.setAttribute('data-id',q.id);
+  st.setAttribute('aria-label',on?'取消收藏':'收藏');st.setAttribute('aria-pressed',on?'true':'false');
+  li.appendChild(st);
+  return li;
+}
+function renderChips(){
+  var box=$('chips'),names=['全部'].concat(CATS,['其他','我的','收藏']),i,b;
+  box.textContent='';
+  for(i=0;i<names.length;i++){
+    b=el('button','chip'+(ui.cat===names[i]?' on':''),names[i]);
+    b.type='button';b.setAttribute('data-cat',names[i]);
+    box.appendChild(b);
+  }
+}
+function renderLibrary(){
+  renderChips();
+  var kw=$('q').value.replace(/\s+/g,'').toLowerCase(),ul=$('libList'),n=0,a=all(),i,q;
+  ul.textContent='';
+  for(i=a.length-1;i>=0;i--){ if(isMine(a[i])){ if(match(a[i],kw)){ul.appendChild(row(a[i]));n++;} } }
+  for(i=0;i<a.length;i++){ q=a[i]; if(!isMine(q)&&match(q,kw)){ul.appendChild(row(q));n++;} }
+  if(!n){ul.appendChild(el('li','empty','找不到符合的座右銘。換個關鍵字，或到「我的」自己寫一句。'));}
+  $('countNote').textContent='共 '+n+' 句';
+}
+function match(q,kw){
+  if(ui.cat==='我的'){if(!isMine(q)){return false;}}
+  else if(ui.cat==='收藏'){if(!state.fav[q.id]){return false;}}
+  else if(ui.cat!=='全部'&&q.cat!==ui.cat){return false;}
+  if(!kw){return true;}
+  return (q.text+(q.src||'')).replace(/\s+/g,'').toLowerCase().indexOf(kw)>=0;
+}
+function renderMine(){
+  var ul=$('mineList'),i;ul.textContent='';
+  for(i=state.custom.length-1;i>=0;i--){ul.appendChild(row(state.custom[i],{manage:true}));}
+  if(!state.custom.length){ul.appendChild(el('li','empty','還沒有。在上面寫下第一句屬於你的座右銘。'));}
+  var r=document.getElementsByName('pool');
+  for(i=0;i<r.length;i++){r[i].checked=(r[i].value===state.pool);}
+  $('formTitle').textContent=ui.editing?'修改座右銘':'寫下自己的座右銘';
+  $('btnSave').textContent=ui.editing?'儲存修改':'加入語錄';
+  $('btnCancel').hidden=!ui.editing;
+}
+function render(){renderToday();renderLibrary();renderMine();}
+function show(view){
+  ui.view=view;
+  var v=['today','library','mine'],i,tabs=document.querySelectorAll('nav button');
+  for(i=0;i<v.length;i++){$('view-'+v[i]).className='view'+(v[i]===view?' on':'');}
+  for(i=0;i<tabs.length;i++){
+    if(tabs[i].getAttribute('data-view')===view){tabs[i].setAttribute('aria-current','page');}
+    else{tabs[i].removeAttribute('aria-current');}
+  }
+  document.querySelector('main').scrollTop=0;
+}
+
+/* ---------- 存成圖片 ---------- */
+var CARD_FONT='"Noto Serif TC","Songti TC","PMingLiU","Noto Serif CJK TC",serif';
+var cardBlob=null;
+function columnsOf(text){
+  var parts=clauses(text),cols=[],i,s;
+  for(i=0;i<parts.length;i++){
+    s=parts[i].replace(/[，；。：、]+$/,'');
+    while(s.length>12){cols.push(s.slice(0,12));s=s.slice(12);}
+    if(s){cols.push(s);}
+  }
+  return cols;
+}
+function vchar(g,ch,x,y){
+  if('《》〈〉（）()「」『』—…'.indexOf(ch)>=0){
+    g.save();g.translate(x,y);g.rotate(Math.PI/2);g.fillText(ch,0,0);g.restore();
+  }else{g.fillText(ch,x,y);}
+}
+function wrapLines(g,text,maxW){
+  var tokens=text.match(/[A-Za-z0-9'’\-]+|\s+|[^\sA-Za-z0-9]/g)||[],lines=[],cur='',i,t;
+  for(i=0;i<tokens.length;i++){
+    t=tokens[i];
+    if(cur&&g.measureText(cur+t).width>maxW){lines.push(cur);cur=/^\s+$/.test(t)?'':t;}
+    else{cur+=t;}
+  }
+  if(cur){lines.push(cur);}
+  return lines;
+}
+function drawCard(q){
+  var W=1080,H=1350,c=document.createElement('canvas'),g,i,j;
+  c.width=W;c.height=H;g=c.getContext('2d');
+  var INK='#1c2422',MUTED='#5d6b66',SEAL='#b3261e';
+  g.fillStyle='#eef1ec';g.fillRect(0,0,W,H);
+  g.fillStyle='#f9faf7';g.fillRect(70,70,W-140,H-140);
+  g.fillStyle=INK;g.fillRect(70,70,W-140,14);g.fillRect(70,H-84,W-140,14);
+  g.textAlign='center';g.textBaseline='middle';
+  var src=q.src||'自勉',horizontal=/[A-Za-z]{3,}/.test(q.text)||q.text.length>48;
+  var now=new Date(),stamp=now.getFullYear()+'.'+pad(now.getMonth()+1)+'.'+pad(now.getDate());
+  if(!horizontal){
+    var cols=columnsOf(q.text),n=cols.length,maxLen=1;
+    for(i=0;i<n;i++){if(cols[i].length>maxLen){maxLen=cols[i].length;}}
+    var top=180,availH=H-180-200,left=310,availW=W-150-left;
+    var size=Math.min(104,Math.floor(availH/(maxLen*1.16)),Math.floor(availW/(n*1.6)));
+    var step=size*1.16,colW=size*1.6,x0=left+(availW+n*colW)/2-colW/2,y0=top+(availH-maxLen*step)*0.3;
+    g.fillStyle=INK;g.font='700 '+size+'px '+CARD_FONT;
+    for(i=0;i<n;i++){for(j=0;j<cols[i].length;j++){vchar(g,cols[i].charAt(j),x0-i*colW,y0+(j+0.5)*step);}}
+    var sx=205,sealY=H-290,ss=Math.min(36,Math.floor(620/(src.length*1.18))),sstep=ss*1.18,sy=sealY-40-src.length*sstep;
+    g.fillStyle=MUTED;g.font='500 '+ss+'px '+CARD_FONT;
+    for(j=0;j<src.length;j++){vchar(g,src.charAt(j),sx,sy+(j+0.5)*sstep);}
+    drawSeal(g,sx,sealY+44,SEAL);
+  }else{
+    var hs=q.text.length>60?46:58,lines,lh;
+    g.font='700 '+hs+'px '+CARD_FONT;g.fillStyle=INK;g.textAlign='left';
+    lines=wrapLines(g,q.text,W-140-180);lh=hs*1.7;
+    var ty=Math.max(230,(H-lines.length*lh)/2-80);
+    for(i=0;i<lines.length;i++){g.fillText(lines[i],160,ty+i*lh);}
+    g.fillStyle=MUTED;g.font='500 34px '+CARD_FONT;g.textAlign='right';
+    g.fillText('—— '+src,W-250,H-246);
+    g.textAlign='center';
+    drawSeal(g,W-190,H-246,SEAL);
+  }
+  g.fillStyle=MUTED;g.font='500 26px '+CARD_FONT;g.textAlign='center';
+  g.fillText('每日座右銘　'+stamp,W/2,H-128);
+  return c;
+}
+function drawSeal(g,cx,cy,color){
+  g.save();g.translate(cx,cy);g.rotate(-0.05);
+  g.fillStyle=color;g.fillRect(-44,-44,88,88);
+  g.fillStyle='#fff7f2';g.font='700 56px '+CARD_FONT;g.textAlign='center';g.textBaseline='middle';
+  g.fillText('銘',0,2);g.restore();
+}
+function openImage(){
+  var q=currentQuote(),done=false;
+  function go(){
+    if(done){return;}done=true;
+    var c;
+    try{c=drawCard(q);$('imgOut').src=c.toDataURL('image/png');}
+    catch(e){toast('這個瀏覽器無法產生圖片');return;}
+    cardBlob=null;$('btnImgShare').hidden=true;
+    try{
+      if(c.toBlob&&navigator.canShare&&typeof File==='function'){
+        c.toBlob(function(b){
+          try{
+            var f=new File([b],'motto.png',{type:'image/png'});
+            if(navigator.canShare({files:[f]})){cardBlob=f;$('btnImgShare').hidden=false;}
+          }catch(e){}
+        },'image/png');
+      }
+    }catch(e){}
+    $('imgView').className='on';
+  }
+  try{
+    if(document.fonts&&document.fonts.load){
+      document.fonts.load('700 60px "Noto Serif TC"',q.text+(q.src||'')+'銘每日座右').then(go,go);
+      setTimeout(go,1500);
+      return;
+    }
+  }catch(e){}
+  go();
+}
+
+var toastTimer=null;
+function toast(msg){
+  var t=$('toast');t.textContent=msg;t.className='show';
+  clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.className='';},2200);
+}
+function copyText(text,okMsg){
+  function fallback(){
+    var ta=document.createElement('textarea');ta.value=text;ta.setAttribute('readonly','');
+    ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+    var ok=false;try{ok=document.execCommand('copy');}catch(e){}
+    document.body.removeChild(ta);
+    toast(ok?okMsg:'無法自動複製，請長按文字手動複製');
+  }
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){toast(okMsg);},fallback);
+    }else{fallback();}
+  }catch(e){fallback();}
+}
+function toggleFav(id){
+  if(state.fav[id]){delete state.fav[id];}else{state.fav[id]=1;}
+  save();render();
+}
+
+/* ---------- 事件 ---------- */
+function onListClick(ev){
+  var b=ev.target;
+  while(b&&b!==this&&!(b.getAttribute&&b.getAttribute('data-act'))){b=b.parentNode;}
+  if(!b||b===this){return;}
+  var act=b.getAttribute('data-act'),id=b.getAttribute('data-id'),q=byId(id),i;
+  if(act==='fav'){toggleFav(id);}
+  else if(act==='edit'&&q){
+    ui.editing=id;ui.confirm=null;
+    $('fText').value=q.text;$('fSrc').value=q.src||'';$('fCat').value=q.cat;
+    renderMine();document.querySelector('main').scrollTop=0;$('fText').focus();
+  }
+  else if(act==='del'){ui.confirm=id;renderMine();}
+  else if(act==='del2'){
+    for(i=0;i<state.custom.length;i++){if(state.custom[i].id===id){state.custom.splice(i,1);break;}}
+    delete state.fav[id];
+    if(ui.editing===id){resetForm();}
+    if(ui.random===id){ui.random=null;}
+    ui.confirm=null;save();render();toast('已刪除');
+  }
+}
+function resetForm(){ui.editing=null;$('fText').value='';$('fSrc').value='';}
+
+function init(){
+  load();
+  var sel=$('fCat'),opts=CATS.concat(['其他']),i,o;
+  for(i=0;i<opts.length;i++){o=el('option',null,opts[i]);o.value=opts[i];sel.appendChild(o);}
+  render();
+
+  document.querySelector('nav').addEventListener('click',function(ev){
+    var v=ev.target.getAttribute&&ev.target.getAttribute('data-view');
+    if(v){show(v);}
+  });
+  $('btnFav').addEventListener('click',function(){toggleFav(currentQuote().id);});
+  $('btnRandom').addEventListener('click',function(){
+    if(ui.random){ui.random=null;}
+    else{
+      var a=all(),cur=currentQuote().id,q;
+      do{q=a[Math.floor(Math.random()*a.length)];}while(a.length>1&&q.id===cur);
+      ui.random=q.id;
+    }
+    renderToday();
+  });
+  $('btnShare').addEventListener('click',function(){
+    var q=currentQuote(),text=q.text+'\n—— '+(q.src||'自勉');
+    if(navigator.share){
+      try{
+        navigator.share({text:text}).then(null,function(err){
+          if(!err||err.name!=='AbortError'){copyText(text,'已複製，可以貼到 LINE');}
+        });
+        return;
+      }catch(e){}
+    }
+    copyText(text,'已複製，可以貼到 LINE');
+  });
+
+  $('btnImage').addEventListener('click',openImage);
+  $('btnImgClose').addEventListener('click',function(){$('imgView').className='';});
+  $('btnImgShare').addEventListener('click',function(){
+    if(!cardBlob){return;}
+    try{navigator.share({files:[cardBlob]}).then(null,function(){});}
+    catch(e){toast('無法直接分享，請長按圖片儲存');}
+  });
+
+  $('recentList').addEventListener('click',onListClick);
+  $('libList').addEventListener('click',onListClick);
+  $('mineList').addEventListener('click',onListClick);
+  $('q').addEventListener('input',renderLibrary);
+  $('chips').addEventListener('click',function(ev){
+    var c=ev.target.getAttribute&&ev.target.getAttribute('data-cat');
+    if(c){ui.cat=c;renderLibrary();}
+  });
+
+  $('addForm').addEventListener('submit',function(ev){
+    ev.preventDefault();
+    var text=$('fText').value.replace(/\s+/g,' ').replace(/^ | $/g,''),src=$('fSrc').value.replace(/^\s+|\s+$/g,''),cat=$('fCat').value,q;
+    if(!text){toast('請先寫下座右銘');$('fText').focus();return;}
+    if(ui.editing&&(q=byId(ui.editing))){
+      q.text=text;q.src=src;q.cat=cat;toast('已儲存修改');
+    }else{
+      state.custom.push({id:'u'+new Date().getTime().toString(36),text:text,src:src,cat:cat});
+      toast('已加入語錄');
+    }
+    resetForm();save();render();
+  });
+  $('btnCancel').addEventListener('click',function(){resetForm();renderMine();});
+
+  $('poolRadios').addEventListener('change',function(ev){
+    if(ev.target.name==='pool'){
+      state.pool=ev.target.value;state.daily=null;ui.random=null;save();render();
+      toast('已更新今日一句的來源');
+    }
+  });
+
+  $('btnExport').addEventListener('click',function(){
+    var text=JSON.stringify({app:'motto',v:1,custom:state.custom,fav:state.fav,pool:state.pool});
+    $('backup').value=text;copyText(text,'備份文字已複製');
+  });
+  $('btnImport').addEventListener('click',function(){
+    var o,added=0,i,j,c,dup;
+    try{o=JSON.parse($('backup').value);}catch(e){o=null;}
+    if(!o||!(o.custom instanceof Array)){toast('備份文字格式不對，請整段重新貼上');return;}
+    for(i=0;i<o.custom.length;i++){
+      c=o.custom[i];
+      if(!c||typeof c.text!=='string'||!c.text){continue;}
+      dup=false;
+      for(j=0;j<state.custom.length;j++){if(state.custom[j].text===c.text){dup=true;break;}}
+      if(dup){continue;}
+      state.custom.push({id:(typeof c.id==='string'&&c.id.charAt(0)==='u'&&!byId(c.id))?c.id:'u'+(new Date().getTime()+i).toString(36),
+        text:c.text.slice(0,120),src:typeof c.src==='string'?c.src.slice(0,30):'',cat:typeof c.cat==='string'?c.cat:'其他'});
+      added++;
+    }
+    if(o.fav&&typeof o.fav==='object'){for(var k in o.fav){if(o.fav.hasOwnProperty(k)&&byId(k)){state.fav[k]=1;}}}
+    save();render();$('backup').value='';
+    toast('已還原，新增 '+added+' 句');
+  });
+
+  /* 跨過午夜或回到前景時，換上新的一天 */
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden&&(!state.daily||state.daily.date!==dateStr(new Date()))){ui.random=null;renderToday();}
+  });
+}
+init();
+
+/* 離線快取：只在 https 或 localhost 註冊 */
+try{
+  if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){
+    window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').then(null,function(){});});
+  }
+}catch(e){}
+})();
+</script>
+</body>
+</html>
