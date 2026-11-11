@@ -15,8 +15,12 @@
 | `index.html` | App 本體 |
 | `manifest.json` | PWA 設定 |
 | `sw.js` | 離線快取（改版時把 `VERSION` 加一） |
-| `icons/` | 圖示（朱印「銘」） |
+| `icons/` | 圖示（朱印「崑福」） |
 
 ## 語錄來源
 
 部分句子取自 [chinese-poetry](https://github.com/chinese-poetry/chinese-poetry)（MIT）並逐字比對原文。
+
+## 字型
+
+朱印「崑福」以[教育部隸書](https://language.moe.gov.tw/)繪製成圖片使用，字形著作權屬中華民國教育部，依創用 CC 姓名標示－禁止改作 3.0 臺灣版授權。本 repo 不含字型檔。
